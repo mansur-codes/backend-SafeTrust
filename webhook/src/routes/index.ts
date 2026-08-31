@@ -4,6 +4,11 @@ import crypto from 'crypto'
 import verifyTrustlessWorkSignature from '../middleware/trustlesswork-signature.middleware'
 import { authMiddleware } from '../middleware/auth.middleware'
 
+// Compile-time SafeTrust escrow state machine (Neon native addon).
+const { getTransitionTable } = require('../../../crates/escrow-state-machine') as {
+  getTransitionTable: () => string
+}
+
 // ── Routes ────────────────────────────────────────────────────────────────────
 import initializeRoute from './escrows/initialize.route'
 import fundRoute from './escrows/fund.route'
@@ -52,9 +57,9 @@ router.get('/health', (_req: Request, res: Response) => {
   res.status(200).json({ status: 'ok' })
 })
 
-// ── 2. TrustlessWork webhook callbacks (HMAC verified, no Firebase auth) ──────
-router.use('/api/escrows', verifyTrustlessWorkSignature as RequestHandler)
+// ── 2. Escrows / x402 booking entrypoint & TrustlessWork callbacks ──────────────
 router.use(initializeRoute)
+router.use('/api/escrows', verifyTrustlessWorkSignature as RequestHandler)
 router.use(fundRoute)
 router.use(approveMilestoneRoute)
 router.use(releaseFundsRoute)
